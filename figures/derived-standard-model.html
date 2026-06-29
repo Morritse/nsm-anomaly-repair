@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derived Standard Model charge map</title>
+<style>body{margin:0;background:#f7f3e8;}main{max-width:1320px;margin:0 auto;}svg{width:100%;height:auto;display:block;}</style>
+</head>
+<body><main>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 1120" role="img" aria-labelledby="title desc">
+<title id="title">Derived Standard Model charge map</title>
+<desc id="desc">A Standard Model-style grid showing solver-derived hypercharges and electric charges for fermions, plus input boson data and consistency notes.</desc>
+<style>
+        svg { background: #f7f3e8; font-family: Inter, Arial, sans-serif; color: #122033; }
+        .title { font-size: 34px; font-weight: 800; fill: #122033; }
+        .subtitle { font-size: 17px; fill: #405064; }
+        .section { font-size: 20px; font-weight: 800; fill: #122033; }
+        .axis { font-size: 18px; font-weight: 800; fill: #39485d; }
+        .row-label { font-size: 17px; font-weight: 800; fill: #39485d; }
+        .tile-bg { fill: #fffaf0; stroke-width: 4; filter: drop-shadow(0 4px 0 rgba(20, 32, 45, 0.08)); }
+        .quark .tile-bg { stroke: #9b6de3; }
+        .lepton .tile-bg { stroke: #54b948; }
+        .gauge-boson .tile-bg { stroke: #ef7a5a; }
+        .scalar-boson .tile-bg { stroke: #d8b31f; }
+        .symbol-ring { fill: #f2efe4; stroke: #ffffff; stroke-width: 5; }
+        .quark .symbol-ring { fill: #d7b5ff; }
+        .lepton .symbol-ring { fill: #a7ec78; }
+        .boson .symbol-ring { fill: #ff9a78; }
+        .scalar-boson .symbol-ring { fill: #f7e46e; }
+        .symbol { font-size: 42px; fill: #07111f; }
+        .boson-symbol { font-size: 41px; }
+        .boson-word { font-size: 21px; font-weight: 800; }
+        .name { font-size: 24px; font-weight: 800; fill: #07111f; }
+        .small { font-size: 21px; }
+        .micro { font-size: 13px; fill: #334155; }
+        .muted { fill: #536173; }
+        .metric { font-size: 17px; font-weight: 800; }
+        .chip-derived { fill: #dff5ff; stroke: none; }
+        .chip-text { font-size: 11px; font-weight: 800; fill: #0b3954; }
+        .tiny { font-size: 9px; }
+        .derived-label { fill: #0b6580; font-weight: 800; }
+        .input-label { fill: #7b5d12; font-weight: 800; }
+        .panel { fill: #ffffff; stroke: #d9d1c0; stroke-width: 2; }
+        .panel-title { font-size: 16px; font-weight: 800; fill: #122033; }
+        .panel-text { font-size: 14px; fill: #405064; }
+        .callout { fill: #e7f7ee; stroke: #59b37a; stroke-width: 2; }
+        .warning { fill: #fff2df; stroke: #e0a03c; stroke-width: 2; }
+        .flow { stroke: #6c7a89; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+        </style>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#6c7a89"/>
+        </marker>
+        </defs>
+<text x="62" y="64" class="title" text-anchor="start">Derived Standard Model charge map</text>
+<text x="62" y="94" class="subtitle" text-anchor="start">The familiar particle grid, but Q and Y are generated from anomaly cancellation, Yukawa gauge invariance, and Q = T3 + Y/2.</text>
+<rect x="62" y="126" width="176" height="54" rx="12" class="panel"/>
+<text x="150" y="150" class="panel-title" text-anchor="middle">SU(3) x SU(2) reps</text>
+<path d="M244,153 L276,153" class="flow"/>
+<rect x="282" y="126" width="176" height="54" rx="12" class="panel"/>
+<text x="370" y="150" class="panel-title" text-anchor="middle">anomaly + Witten checks</text>
+<path d="M464,153 L496,153" class="flow"/>
+<rect x="502" y="126" width="176" height="54" rx="12" class="panel"/>
+<text x="590" y="150" class="panel-title" text-anchor="middle">Yukawa invariance</text>
+<path d="M684,153 L716,153" class="flow"/>
+<rect x="722" y="126" width="176" height="54" rx="12" class="panel"/>
+<text x="810" y="150" class="panel-title" text-anchor="middle">GMN relation</text>
+<path d="M904,153 L936,153" class="flow"/>
+<rect x="942" y="126" width="176" height="54" rx="12" class="panel"/>
+<text x="1030" y="150" class="panel-title" text-anchor="middle">derived Y and Q</text>
+<rect x="1152" y="126" width="106" height="54" rx="12" class="callout"/>
+<text x="1205" y="149" class="panel-title" text-anchor="middle">unique: True</text>
+<text x="1205" y="169" class="micro" text-anchor="middle">solver result</text>
+<text x="62" y="224" class="section" text-anchor="start">Three generations of matter</text>
+<text x="259.0" y="242" class="axis" text-anchor="middle">I</text>
+<text x="477.0" y="242" class="axis" text-anchor="middle">II</text>
+<text x="695.0" y="242" class="axis" text-anchor="middle">III</text>
+<text x="144" y="334" class="row-label" text-anchor="end">up quarks</text>
+<text x="144" y="498" class="row-label" text-anchor="end">down quarks</text>
+<text x="144" y="662" class="row-label" text-anchor="end">charged leptons</text>
+<text x="144" y="826" class="row-label" text-anchor="end">neutrinos</text>
+<g class="tile matter quark">
+<rect x="160" y="252" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="176" y="278" class="micro muted" text-anchor="start">mass input: 2.2 MeV</text>
+<circle cx="259" cy="314" r="34" class="symbol-ring"/>
+<text x="259" y="326" class="symbol" text-anchor="middle">u</text>
+<text x="259" y="366" class="name" text-anchor="middle">up</text>
+<g class="chips">
+<rect x="174" y="374" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="200" y="387" class="chip-text" text-anchor="middle">Q=+2/3</text>
+<rect x="232" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="259" y="387" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="292" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="319" y="387" class="chip-text tiny" text-anchor="middle">Y_R=+4/3</text>
+</g>
+</g>
+<g class="tile matter quark">
+<rect x="378" y="252" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="394" y="278" class="micro muted" text-anchor="start">mass input: 1.27 GeV</text>
+<circle cx="477" cy="314" r="34" class="symbol-ring"/>
+<text x="477" y="326" class="symbol" text-anchor="middle">c</text>
+<text x="477" y="366" class="name" text-anchor="middle">charm</text>
+<g class="chips">
+<rect x="392" y="374" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="418" y="387" class="chip-text" text-anchor="middle">Q=+2/3</text>
+<rect x="450" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="477" y="387" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="510" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="537" y="387" class="chip-text tiny" text-anchor="middle">Y_R=+4/3</text>
+</g>
+</g>
+<g class="tile matter quark">
+<rect x="596" y="252" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="612" y="278" class="micro muted" text-anchor="start">mass input: 173 GeV</text>
+<circle cx="695" cy="314" r="34" class="symbol-ring"/>
+<text x="695" y="326" class="symbol" text-anchor="middle">t</text>
+<text x="695" y="366" class="name" text-anchor="middle">top</text>
+<g class="chips">
+<rect x="610" y="374" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="636" y="387" class="chip-text" text-anchor="middle">Q=+2/3</text>
+<rect x="668" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="695" y="387" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="728" y="374" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="755" y="387" class="chip-text tiny" text-anchor="middle">Y_R=+4/3</text>
+</g>
+</g>
+<g class="tile matter quark">
+<rect x="160" y="416" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="176" y="442" class="micro muted" text-anchor="start">mass input: 4.7 MeV</text>
+<circle cx="259" cy="478" r="34" class="symbol-ring"/>
+<text x="259" y="490" class="symbol" text-anchor="middle">d</text>
+<text x="259" y="530" class="name" text-anchor="middle">down</text>
+<g class="chips">
+<rect x="174" y="538" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="200" y="551" class="chip-text" text-anchor="middle">Q=-1/3</text>
+<rect x="232" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="259" y="551" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="292" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="319" y="551" class="chip-text tiny" text-anchor="middle">Y_R=-2/3</text>
+</g>
+</g>
+<g class="tile matter quark">
+<rect x="378" y="416" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="394" y="442" class="micro muted" text-anchor="start">mass input: 95 MeV</text>
+<circle cx="477" cy="478" r="34" class="symbol-ring"/>
+<text x="477" y="490" class="symbol" text-anchor="middle">s</text>
+<text x="477" y="530" class="name" text-anchor="middle">strange</text>
+<g class="chips">
+<rect x="392" y="538" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="418" y="551" class="chip-text" text-anchor="middle">Q=-1/3</text>
+<rect x="450" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="477" y="551" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="510" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="537" y="551" class="chip-text tiny" text-anchor="middle">Y_R=-2/3</text>
+</g>
+</g>
+<g class="tile matter quark">
+<rect x="596" y="416" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="612" y="442" class="micro muted" text-anchor="start">mass input: 4.18 GeV</text>
+<circle cx="695" cy="478" r="34" class="symbol-ring"/>
+<text x="695" y="490" class="symbol" text-anchor="middle">b</text>
+<text x="695" y="530" class="name" text-anchor="middle">bottom</text>
+<g class="chips">
+<rect x="610" y="538" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="636" y="551" class="chip-text" text-anchor="middle">Q=-1/3</text>
+<rect x="668" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="695" y="551" class="chip-text" text-anchor="middle">Y_L=+1/3</text>
+<rect x="728" y="538" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="755" y="551" class="chip-text tiny" text-anchor="middle">Y_R=-2/3</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="160" y="580" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="176" y="606" class="micro muted" text-anchor="start">mass input: 0.511 MeV</text>
+<circle cx="259" cy="642" r="34" class="symbol-ring"/>
+<text x="259" y="654" class="symbol" text-anchor="middle">e</text>
+<text x="259" y="694" class="name" text-anchor="middle">electron</text>
+<g class="chips">
+<rect x="174" y="702" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="200" y="715" class="chip-text" text-anchor="middle">Q=-1</text>
+<rect x="232" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="259" y="715" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="292" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="319" y="715" class="chip-text tiny" text-anchor="middle">Y_R=-2</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="378" y="580" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="394" y="606" class="micro muted" text-anchor="start">mass input: 106 MeV</text>
+<circle cx="477" cy="642" r="34" class="symbol-ring"/>
+<text x="477" y="654" class="symbol" text-anchor="middle">mu</text>
+<text x="477" y="694" class="name" text-anchor="middle">muon</text>
+<g class="chips">
+<rect x="392" y="702" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="418" y="715" class="chip-text" text-anchor="middle">Q=-1</text>
+<rect x="450" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="477" y="715" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="510" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="537" y="715" class="chip-text tiny" text-anchor="middle">Y_R=-2</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="596" y="580" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="612" y="606" class="micro muted" text-anchor="start">mass input: 1.78 GeV</text>
+<circle cx="695" cy="642" r="34" class="symbol-ring"/>
+<text x="695" y="654" class="symbol" text-anchor="middle">tau</text>
+<text x="695" y="694" class="name" text-anchor="middle">tau</text>
+<g class="chips">
+<rect x="610" y="702" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="636" y="715" class="chip-text" text-anchor="middle">Q=-1</text>
+<rect x="668" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="695" y="715" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="728" y="702" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="755" y="715" class="chip-text tiny" text-anchor="middle">Y_R=-2</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="160" y="744" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="176" y="770" class="micro muted" text-anchor="start">mass input: not fixed</text>
+<circle cx="259" cy="806" r="34" class="symbol-ring"/>
+<text x="259" y="818" class="symbol" text-anchor="middle">nu_e</text>
+<text x="259" y="858" class="name" text-anchor="middle">electron neutrino</text>
+<g class="chips">
+<rect x="174" y="866" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="200" y="879" class="chip-text" text-anchor="middle">Q=0</text>
+<rect x="232" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="259" y="879" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="292" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="319" y="879" class="chip-text tiny" text-anchor="middle">Y_R=n/a</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="378" y="744" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="394" y="770" class="micro muted" text-anchor="start">mass input: not fixed</text>
+<circle cx="477" cy="806" r="34" class="symbol-ring"/>
+<text x="477" y="818" class="symbol" text-anchor="middle">nu_mu</text>
+<text x="477" y="858" class="name" text-anchor="middle">muon neutrino</text>
+<g class="chips">
+<rect x="392" y="866" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="418" y="879" class="chip-text" text-anchor="middle">Q=0</text>
+<rect x="450" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="477" y="879" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="510" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="537" y="879" class="chip-text tiny" text-anchor="middle">Y_R=n/a</text>
+</g>
+</g>
+<g class="tile matter lepton">
+<rect x="596" y="744" width="198" height="146" rx="18" class="tile-bg"/>
+<text x="612" y="770" class="micro muted" text-anchor="start">mass input: not fixed</text>
+<circle cx="695" cy="806" r="34" class="symbol-ring"/>
+<text x="695" y="818" class="symbol" text-anchor="middle">nu_tau</text>
+<text x="695" y="858" class="name" text-anchor="middle">tau neutrino</text>
+<g class="chips">
+<rect x="610" y="866" width="52" height="18" rx="9" class="chip-derived"/>
+<text x="636" y="879" class="chip-text" text-anchor="middle">Q=0</text>
+<rect x="668" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="695" y="879" class="chip-text" text-anchor="middle">Y_L=-1</text>
+<rect x="728" y="866" width="54" height="18" rx="9" class="chip-derived"/>
+<text x="755" y="879" class="chip-text tiny" text-anchor="middle">Y_R=n/a</text>
+</g>
+</g>
+<text x="832" y="224" class="section" text-anchor="start">Force carriers and scalar</text>
+<g class="tile boson gauge-boson">
+<rect x="832" y="252" width="198" height="122" rx="18" class="tile-bg"/>
+<text x="848" y="278" class="micro muted" text-anchor="start">mass input: 0</text>
+<circle cx="902" cy="314" r="32" class="symbol-ring"/>
+<text x="902" y="326" class="symbol boson-symbol" text-anchor="middle">g</text>
+<text x="974" y="306" class="name small" text-anchor="start">gluon</text>
+<text x="974" y="334" class="metric derived-label" text-anchor="start">Q=0</text>
+<text x="974" y="356" class="micro muted" text-anchor="start">spin input: 1</text>
+</g>
+<g class="tile boson gauge-boson">
+<rect x="1050" y="252" width="198" height="122" rx="18" class="tile-bg"/>
+<text x="1066" y="278" class="micro muted" text-anchor="start">mass input: 0</text>
+<circle cx="1120" cy="314" r="32" class="symbol-ring"/>
+<text x="1120" y="326" class="symbol boson-word" text-anchor="middle">photon</text>
+<text x="1192" y="306" class="name small" text-anchor="start">photon</text>
+<text x="1192" y="334" class="metric derived-label" text-anchor="start">Q=0</text>
+<text x="1192" y="356" class="micro muted" text-anchor="start">spin input: 1</text>
+</g>
+<g class="tile boson gauge-boson">
+<rect x="832" y="392" width="198" height="122" rx="18" class="tile-bg"/>
+<text x="848" y="418" class="micro muted" text-anchor="start">mass input: 91.2 GeV</text>
+<circle cx="902" cy="454" r="32" class="symbol-ring"/>
+<text x="902" y="466" class="symbol boson-symbol" text-anchor="middle">Z</text>
+<text x="974" y="446" class="name small" text-anchor="start">Z boson</text>
+<text x="974" y="474" class="metric derived-label" text-anchor="start">Q=0</text>
+<text x="974" y="496" class="micro muted" text-anchor="start">spin input: 1</text>
+</g>
+<g class="tile boson gauge-boson">
+<rect x="1050" y="392" width="198" height="122" rx="18" class="tile-bg"/>
+<text x="1066" y="418" class="micro muted" text-anchor="start">mass input: 80.4 GeV</text>
+<circle cx="1120" cy="454" r="32" class="symbol-ring"/>
+<text x="1120" y="466" class="symbol boson-symbol" text-anchor="middle">W</text>
+<text x="1192" y="446" class="name small" text-anchor="start">W boson</text>
+<text x="1192" y="474" class="metric derived-label" text-anchor="start">Q=+/-1</text>
+<text x="1192" y="496" class="micro muted" text-anchor="start">spin input: 1</text>
+</g>
+<g class="tile boson scalar-boson">
+<rect x="832" y="532" width="414" height="122" rx="18" class="tile-bg"/>
+<text x="848" y="558" class="micro muted" text-anchor="start">mass input: 125 GeV</text>
+<circle cx="902" cy="594" r="32" class="symbol-ring"/>
+<text x="902" y="606" class="symbol boson-symbol" text-anchor="middle">H</text>
+<text x="974" y="586" class="name small" text-anchor="start">Higgs</text>
+<text x="974" y="614" class="metric derived-label" text-anchor="start">Q=0</text>
+<text x="974" y="636" class="micro muted" text-anchor="start">spin input: 0</text>
+</g>
+<rect x="832" y="690" width="414" height="170" rx="16" class="panel"/>
+<text x="852" y="722" class="panel-title" text-anchor="start">What is actually derived</text>
+<text x="856" y="754" class="metric derived-label" text-anchor="start">Y(Q_L)=+1/3</text>
+<text x="1034" y="754" class="metric derived-label" text-anchor="start">Y(u_R)=+4/3</text>
+<text x="856" y="784" class="metric derived-label" text-anchor="start">Y(d_R)=-2/3</text>
+<text x="1034" y="784" class="metric derived-label" text-anchor="start">Y(L_L)=-1</text>
+<text x="856" y="814" class="metric derived-label" text-anchor="start">Y(e_R)=-2</text>
+<text x="1034" y="814" class="metric derived-label" text-anchor="start">Y(H)=+1</text>
+<text x="856" y="844" class="panel-text" text-anchor="start">Masses and spins are inputs; exact values are not SM-derived here.</text>
+<rect x="62" y="934" width="276" height="112" rx="14" class="warning"/>
+<text x="80" y="964" class="panel-title" text-anchor="start">anomaly-only</text>
+<text x="80" y="994" class="panel-text" text-anchor="start">2 solutions: u_R and d_R can swap</text>
+<text x="80" y="1015" class="panel-text" text-anchor="start">without Yukawa constraints.</text>
+<rect x="368" y="934" width="276" height="112" rx="14" class="warning"/>
+<text x="386" y="964" class="panel-title" text-anchor="start">free nu_R</text>
+<text x="386" y="994" class="panel-text" text-anchor="start">non-unique: a B-L flat direction</text>
+<text x="386" y="1015" class="panel-text" text-anchor="start">opens.</text>
+<rect x="674" y="934" width="276" height="112" rx="14" class="callout"/>
+<text x="692" y="964" class="panel-title" text-anchor="start">Majorana nu_R</text>
+<text x="692" y="994" class="panel-text" text-anchor="start">unique again: Y(nu_R)=0 and</text>
+<text x="692" y="1015" class="panel-text" text-anchor="start">Q(nu_R)=0.</text>
+<rect x="980" y="934" width="276" height="112" rx="14" class="callout"/>
+<text x="998" y="964" class="panel-title" text-anchor="start">process layer</text>
+<text x="998" y="994" class="panel-text" text-anchor="start">mu decay uses a W tree; mu -&gt; e</text>
+<text x="998" y="1015" class="panel-text" text-anchor="start">gamma is loop/mixing only.</text>
+<text x="62" y="1082" class="micro muted" text-anchor="start">Generated by nsm.visualize from derive_hypercharges(standard_model_skeleton()).</text>
+</svg>
+</main></body>
+</html>

@@ -1,0 +1,784 @@
+\documentclass[11pt]{article}
+
+\usepackage{cmap}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\input{glyphtounicode}
+\pdfgentounicode=1
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{upquote}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={nsm: explainable menu-relative anomaly repair for U(1)X extensions of the Standard Model},
+  pdfauthor={Evan Morritse}
+}
+
+\definecolor{codebg}{gray}{0.96}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=none,
+  columns=fullflexible,
+  keepspaces=true,
+  xleftmargin=1em,
+}
+
+\newcommand{\nsm}{\texttt{nsm}}
+\newcommand{\UY}{U(1)_Y}
+\newcommand{\UX}{U(1)_X}
+\newcommand{\SUthree}{SU(3)}
+\newcommand{\SUtwo}{SU(2)}
+
+\title{\nsm: explainable menu-relative anomaly repair\\
+for $U(1)_X$ extensions of the Standard Model}
+\author{Evan Morritse}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper presents \nsm, an explainable symbolic engine for diagnosing and repairing
+anomalous $U(1)_X$ extensions of the Standard Model. Given a one-generation
+charge assignment, \nsm{} evaluates the complete
+$SU(3)\times SU(2)\times U(1)_Y\times U(1)_X$ perturbative local anomaly set,
+including the mixed $[Y^2X]$ and $[YX^2]$ coefficients, identifies the
+obstructing anomaly coefficients, and searches a declared menu of sterile and
+SM-vector-like matter in increasing declared cost. The repair tier is
+bounded below by exact support criteria: sterile singlets cannot cancel mixed hypercharge
+anomalies, colorless additions cannot cancel $[\SUthree^2X]$, and weak singlets
+cannot cancel $[\SUtwo^2X]$. In the sterile tier, one- and two-sterile-singlet
+repairs have closed-form rationality criteria, so the solver is needed only where these exact
+checks run out. \nsm{} returns the first exact rational repair found and certifies
+its minimum cost when every cheaper rung is resolved by support pruning or SMT
+unsatisfiability. Every returned repair spectrum is re-verified against all
+anomaly coefficients, while unresolved solver cases are marked uncertified. The
+minimality claim is relative to the declared N/E'/L'/D'/Q' representation menu,
+the stated lexicographic cost ordering, and the rational-charge requirement. The
+method is validated by deriving Standard-Model hypercharges, reproducing the
+one-$\nu_R$-per-generation repair of family-universal gauged $B\!-\!L$, and
+constructing a repair census over bounded integer charge assignments. The method
+intentionally does not synthesize scalar sectors, enforce $\UX$ Yukawa
+completion for repaired models, or calculate physical observables.
+\end{abstract}
+
+\noindent\textbf{Keywords:} Anomaly cancellation; Gauge anomaly; \(U(1)\) gauge extension; Symbolic computation; Satisfiability modulo theories; Computational particle physics
+
+\section*{Program Summary}
+
+\noindent
+\textbf{Program title:} \texttt{nsm}
+
+\noindent
+\textbf{CPC Library link to program files:} To be assigned by CPC if accepted.
+
+\noindent
+\textbf{Developer's repository link:}
+\url{https://github.com/Morritse/nsm-anomaly-repair}.
+
+\noindent
+\textbf{Code Ocean capsule:} To be added by Technical Editor.
+
+\noindent
+\textbf{Licensing provisions:} MIT License.
+
+\noindent
+\textbf{Programming language:} Python 3.
+
+\noindent
+\textbf{External routines/libraries:} \texttt{z3-solver} for SMT solving.
+Exact rational arithmetic uses the Python standard-library \texttt{fractions}
+module. Development and validation use pytest.
+
+\noindent
+\textbf{Nature of problem:} For a proposed \(U(1)_X\) extension of the Standard
+Model, determine whether the fermion spectrum is locally anomaly-free. If it is
+not, search a declared menu of sterile and SM-vector-like but
+\(U(1)_X\)-chiral matter for an exact rational anomaly-cancelling repair, while
+recording which lower-cost repairs are ruled out by support arguments or solver
+unsatisfiability.
+
+\noindent
+\textbf{Solution method:} The program evaluates the full perturbative local
+anomaly vector in exact rational arithmetic, applies representation-theoretic
+support bounds to prune impossible repair tiers, uses closed-form rationality
+criteria for one- and two-sterile-singlet repairs, and sends remaining nonlinear
+repair systems to SMT solving. Returned rational repair witnesses are
+re-verified against all anomaly coefficients. Minimality is certified only when
+every lower-cost rung is resolved by support pruning or solver unsatisfiability.
+
+\noindent
+\textbf{Additional comments including restrictions and unusual features:}
+Minimality is relative to the declared
+\(N/E'/L'/D'/Q'\) matter menu, the stated lexicographic cost ordering, the Weyl
+multiplet budget, and the rational-charge requirement. The program does not
+synthesize scalar sectors, enforce Yukawa completion for repaired models, or
+compute physical observables. The repair result includes an evidence record
+distinguishing certified minimality from unresolved solver rungs and algebraic
+non-rational solver models.
+
+\section{Introduction}
+
+Most computational tools for particle theory are \emph{calculators} (amplitudes,
+cross sections, decay rates) or \emph{databases} (particle properties, model
+files). Comparatively little tooling answers the earlier structural questions a
+model builder actually asks first: \emph{Given this gauge structure, what is
+forced? What is merely conventional? Is this proposed extension even
+consistent, and if not, what is the smallest thing that fixes it?}
+
+\nsm{}\footnote{\nsm{} is the package name, not an acronym; the project began
+as a ``non-standard model'' pun and is now used here as a consistency engine for
+Standard-Model and BSM gauge theories.} is an attempt to make those questions
+mechanical and explainable for the anomaly-repair problem. It combines exact
+rational anomaly arithmetic, simple representation-theoretic support bounds, and
+SMT search over the remaining nonlinear systems. The design goal is simple: when
+the tool says that a charge assignment is broken, it should also say where it
+broke, which cheaper repairs cannot reach the obstruction, and what kind of
+repair can actually fix it. The output is therefore a \emph{traceable structural
+statement}, rather than a floating-point number whose provenance is opaque.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item Exact anomaly diagnosis for
+$SU(3)\times SU(2)\times U(1)_Y\times U(1)_X$, including the mixed $[Y^2X]$ and
+$[YX^2]$ coefficients.
+\item Support-based lower bounds on the representation tier required to repair a
+residual anomaly vector, making many obstruction claims solver-free.
+\item A matter-repair search over a declared menu of sterile
+singlets and SM-vector-like, $\UX$-chiral exotic pairs, with closed-form sterile
+criteria, exact rational witnesses, and certified minimum-cost records when all
+cheaper rungs are resolved.
+\item Worked repairs and a reproducible repair census, validated by exact
+re-checking of every returned spectrum and by reproduction of known results.
+\end{enumerate}
+
+\paragraph{Non-contributions.}
+\nsm{} computes no physical observables and makes no claim of discovery. It does
+not derive masses, mixing angles, coupling values, scalar sectors, or the number
+of generations (these remain empirical inputs). Its results are structural and
+quantum-number-level; see Section~\ref{sec:limits}. Throughout, this paper uses the
+convention $Q = T_3 + Y/2$, so the quark doublet carries $Y = 1/3$.
+
+\section{Repair problem}
+
+The input to the central algorithm is a one-generation $\UX$ charge assignment
+for the five Standard-Model multiplets $(Q_L,u_R,d_R,L_L,e_R)$. Missing entries
+are interpreted as zero charge, not as deleted fields. The task is to decide
+whether the assignment is anomaly-free; if it is not, search a declared menu of
+new Weyl multiplets for an anomaly-cancelling matter repair.
+
+Equivalently, for an input spectrum $S$, declared repair menu $\mathcal M$,
+local anomaly vector $\mathcal A$, and lexicographic cost $C$ defined in
+Section~4, the repair problem is
+\[
+\underset{R\in\mathcal M}{\operatorname{minimize}}\; C(R)
+\qquad\text{subject to}\qquad
+\mathcal A(S\cup R)=0,\qquad X_R\in\mathbb Q .
+\]
+The output is not just a spectrum, but a rational witness $R$ together with its
+certification status under that declared ordering.
+
+The rationality requirement is physical as well as practical. For a compact
+$\UX$ gauge factor, charges live on a lattice; after an overall normalization,
+rational charges can be represented as integer lattice charges. Algebraic
+irrational solver models are therefore treated as evidence of real
+satisfiability, but not as accepted compact-$\UX$ repair witnesses.
+
+The menu used in this paper is shown in Table~\ref{tab:menu}. $N$ is a sterile
+right-handed singlet. The other entries are SM-vector-like pairs: the left and
+right Weyl multiplets carry the same SM representation but may carry different
+$\UX$ charges, so they are chiral under the new gauge factor while remaining
+vector-like under the Standard Model. Throughout, ``six added fields'' means six
+added \emph{Weyl multiplets}, not six individual color or weak components.
+
+\begin{center}
+\centering
+\small
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.24\linewidth}c>{\raggedright\arraybackslash}p{0.40\linewidth}@{}}
+\toprule
+item & SM representation(s) & Weyl multiplets & anomaly support \\
+\midrule
+$N$ & $(1,1,0)_R$ & $1$ & $[\text{grav}^2X]$, $[X^3]$ \\
+$E'$ & $(1,1,-2)_L+(1,1,-2)_R$ & $2$ &
+$[\text{grav}^2X]$, $[Y^2X]$, $[YX^2]$, $[X^3]$ \\
+$L'$ & $(1,2,-1)_L+(1,2,-1)_R$ & $2$ &
+$[\SUtwo^2X]$, $[\text{grav}^2X]$, $[Y^2X]$, $[YX^2]$, $[X^3]$ \\
+$D'$ & $(3,1,-2/3)_L+(3,1,-2/3)_R$ & $2$ &
+$[\SUthree^2X]$, $[\text{grav}^2X]$, $[Y^2X]$, $[YX^2]$, $[X^3]$ \\
+$Q'$ & $(3,2,1/3)_L+(3,2,1/3)_R$ & $2$ &
+$[\SUthree^2X]$, $[\SUtwo^2X]$, $[\text{grav}^2X]$, $[Y^2X]$, $[YX^2]$, $[X^3]$ \\
+\bottomrule
+\end{tabular}
+\par\medskip
+\refstepcounter{table}\label{tab:menu}
+Table~\thetable: Declared repair menu. The support column lists which residual
+$X$-sector anomaly coefficients an item can change with a chiral $\UX$ split.
+\end{center}
+
+\section{Anomaly conventions}
+
+For a newly \emph{gauged} $\UX$ alongside hypercharge, the engine evaluates the
+complete perturbative local anomaly set for
+$\SUthree\times\SUtwo\times\UY\times\UX$, together with the Witten $\SUtwo$
+doublet-parity check~\cite{witten}. The local set includes pure-$X$ and
+\emph{mixed} coefficients. Writing $d_3,d_2$ for the color and weak dimensions,
+$T_c,T_w$ for the Dynkin indices, and $s=\pm1$ for chirality, the engine
+evaluates
+\begin{align}
+[\SUthree^2 X] &= \textstyle\sum s\,d_2 T_c\,X, &
+[\SUtwo^2 X] &= \textstyle\sum s\,d_3 T_w\,X, &
+[\text{grav}^2 X] &= \textstyle\sum s\,d_3 d_2\,X, \nonumber\\
+[X^3] &= \textstyle\sum s\,d_3 d_2\,X^3, &
+[Y^2 X] &= \textstyle\sum s\,d_3 d_2\,Y^2 X, &
+[Y X^2] &= \textstyle\sum s\,d_3 d_2\,Y X^2,
+\label{eq:mixed}
+\end{align}
+together with the corresponding $Y$-sector and $[\SUthree^3]$ coefficients. The
+mixed terms~\eqref{eq:mixed} are load-bearing: a charge assignment can cancel
+every pure-$X$ anomaly yet fail $[Y^2 X]$, so a single-$U(1)$ check can certify
+a still-anomalous model as consistent.
+
+\section{Minimal repair}
+
+Given a charge assignment that fails the conditions above, \nsm{} searches for
+the smallest set of added fermions whose charges cancel the residual anomalies.
+Some of this reasoning is solver-free. For each menu item define its
+\emph{support}: the set of anomaly coefficients it can change with a chiral
+$\UX$ split. A sterile singlet has support
+\[
+\{[\text{grav}^2X], [X^3]\},
+\]
+because $Y=0$ and it is an $\SUthree\times\SUtwo$ singlet. A colorless
+hypercharged pair reaches the mixed hypercharge coefficients but not
+$[\SUthree^2X]$; a weak singlet cannot reach $[\SUtwo^2X]$; and a colored pair
+is required to change $[\SUthree^2X]$. Therefore, if the support of the residual
+anomaly vector is not contained in the union of the chosen menu supports, no
+charge assignment in that menu can repair the model. This gives exact lower
+bounds on the repair tier before any SMT query is made.
+
+The sterile tier also has a closed form. A sterile right-handed singlet is color
+and weak neutral with $Y=0$ and unknown $X$, so cancelling a residual
+$(g,c)=([\text{grav}^2X],[X^3])$ requires
+\begin{equation}
+\sum_i X_i = g, \qquad \sum_i X_i^3 = c.
+\label{eq:repair}
+\end{equation}
+One sterile field exists iff $c=g^3$ (with the field charge $X=g$). For two
+sterile charges, write $x+y=g$ and $x^3+y^3=c$. If $g\ne0$, then
+\[
+xy=\frac{g^3-c}{3g}, \qquad
+\Delta=(x-y)^2 = g^2-4xy = \frac{4c-g^3}{3g}.
+\]
+A rational two-singlet repair exists iff $\Delta$ is a rational square (with
+the usual nonzero-field guard if inert zero-charge additions are disallowed).
+If $g=0$, then $x=-y$ forces $c=0$, so a two-field sterile pair cannot cancel a
+nonzero cubic residual. Thus the first two sterile rungs are decidable by hand;
+higher-multiplicity sterile systems and exotic-pair systems are passed to the
+solver.
+
+Beyond the singlet, the menu adds \emph{SM-vector-like, $\UX$-chiral} exotic
+pairs $E',L',D',Q'$ in definite SM representations with left/right charges
+$X_L\neq X_R$. Being vector-like under the Standard Model, each pair cancels its
+own SM anomalies; its chiral $\UX$ split feeds the $X$-sector, with contributions
+$\propto(X_L-X_R)$, $(X_L^2-X_R^2)$, and $(X_L^3-X_R^3)$. Hypercharged pairs
+therefore reach $[Y^2X]$ and $[YX^2]$; colored pairs reach $[\SUthree^2X]$; weak
+doublets reach $[\SUtwo^2X]$. The chirality condition $X_L\neq X_R$ is
+essential: an $X$-vector-like pair would be inert in every $X$ anomaly.
+
+The engine searches repair tiers in order---sterile singlet, then colorless
+exotic, then colored exotic---and reports the first exact rational repair found
+under the declared cost ordering. If a nonzero anomaly lies outside the reach of
+every menu item, the model is reported \emph{structurally blocked} with that
+coefficient named; if every nonzero anomaly is reachable but no repair fits the
+Weyl-multiplet budget, it is reported \emph{budget-limited} instead. The tool
+thus never claims a fix it cannot deliver, nor mistakes a budget limit for an
+obstruction.
+
+The ordering is lexicographic. First compare repair tier,
+\[
+N \;<\; \{N,E',L'\} \;<\; \{N,E',L',D',Q'\}.
+\]
+Within a tier, compare
+\[
+C(R)=\bigl(N_{\rm Weyl},\ \max_i w_i,\ \sum_i n_i w_i,\ \text{combination}\bigr),
+\]
+where $N_{\rm Weyl}=n_N+2(n_E+n_L+n_D+n_Q)$,
+\[
+\text{combination}=(n_N,n_E,n_L,n_D,n_Q),
+\]
+and
+\[
+w_N=1,\quad w_E=2,\quad w_L=4,\quad w_D=6,\quad w_Q=12 .
+\]
+The weights count the number of SM components carried by one menu item: one
+sterile Weyl multiplet for $N$, two singlets for $E$, two weak doublets for $L$,
+two color triplets for $D$, and two color-triplet weak-doublets for $Q$. The
+final combination component is only a deterministic tie-breaker.
+
+\nsm{} searches candidate spectra in increasing declared cost, returns the first
+exact rational repair found, and certifies its minimum cost when every cheaper
+rung is resolved by support pruning or SMT unsatisfiability. Where SMT is used,
+the search emits a \emph{minimality evidence record}: for
+each lower-cost menu combination under the declared ordering, it records whether
+the combination was ruled out by support (\texttt{support-prune}), ruled out by an SMT \texttt{unsat}
+verdict, left unresolved (\texttt{unknown}), or produced only an algebraic model
+from the solver. An SMT \texttt{unsat} verdict is a decision over the reals, so a
+record with only \texttt{support-prune} and \texttt{unsat} lower rungs is a
+solver-backed guarantee that no cheaper repair exists within the menu. An
+\texttt{unknown} or \texttt{sat-algebraic-model} rung does not certify
+minimality and is reported as such. The implementation records solver verdicts, but not tracked
+unsat cores, SMT-LIB replay artifacts, or proof logs; an unsat core would
+identify a conflicting subset of assumptions, while a proof log, where supported,
+would provide the stronger artifact. For gauged $B\!-\!L$ the criterion is
+immediate: $g=c=-1$ and $c=g^3$, so the minimal one-field sterile repair is
+a single $\nu_R$ with $X=-1$.
+
+The reported repair is an anomaly-cancelling rational witness within the menu;
+it is a certified minimum only when the evidence record has no unresolved
+lower-cost rung. It is not unique, not a naturalness statement, and not a claim
+that the field exists.
+
+\section{\texorpdfstring{Case study: gauging $B\!-\!L$}{Case study: gauging B-L}}
+\label{sec:casestudy}
+
+Assign each fermion its $B\!-\!L$ charge ($+1/3$ for quarks, $-1$ for leptons)
+and gauge it. The computed local anomaly set (Table~\ref{tab:bml}) shows the model is
+inconsistent, and \emph{why}: only $[\text{grav}^2 X]$ and $[X^3]$ fail, both
+equal to $-1$; every mixed and non-abelian coefficient already cancels.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrlr@{}}
+\toprule
+coefficient & value & coefficient & value\\
+\midrule
+$[\SUthree^3]$ & $0$ & $[\text{grav}^2 X]$ & $-1$ \ \textbf{(fails)}\\
+$[\SUthree^2 Y]$, $[\SUthree^2 X]$ & $0$ & $[Y^3]$ & $0$\\
+$[\SUtwo^2 Y]$, $[\SUtwo^2 X]$ & $0$ & $[Y^2 X]$, $[Y X^2]$ & $0$\\
+$[\text{grav}^2 Y]$ & $0$ & $[X^3]$ & $-1$ \ \textbf{(fails)}\\
+\bottomrule
+\end{tabular}
+\caption{The eleven anomaly coefficients for gauged $B\!-\!L$ with
+Standard-Model fermions only, as computed by \nsm. Only the gravitational and
+cubic $X$-anomalies fail.}
+\label{tab:bml}
+\end{table}
+
+By~\eqref{eq:repair} with $g=c=-1$, the one-$\nu_R$-per-generation sterile repair
+has $X=-1$: one sterile right-handed singlet of $B\!-\!L$ charge $-1$. Re-running
+the local anomaly set on the repaired fermion content returns all zeros. The
+familiar right-handed neutrino appears here as the answer to a constrained repair
+problem, not as an input assumption.
+Constructing a complete massive $B\!-\!L$ gauge model additionally requires a
+symmetry-breaking scalar sector, which lies outside the present anomaly-repair
+problem.
+
+Gauged $B\!-\!L$ is a clean corner of the repair map: the obstruction is narrow,
+and the minimal sterile repair is the textbook one~\cite{bminusL}. The same
+engine is more useful when the obstruction is less tidy. It reports the
+repair tier found for any $\UX$ charge assignment
+(Table~\ref{tab:tiers}), and a second worked case makes the tiering
+concrete. Assign $X=1$ to $e_R$ alone; the engine returns the anomaly vector
+\[
+\bigl([\text{grav}^2X],\,[Y^2X],\,[YX^2],\,[X^3]\bigr) = (-1,\,-4,\,+2,\,-1),
+\qquad [\SUthree^2X]=[\SUtwo^2X]=0 .
+\]
+
+A sterile singlet has $Y=0$, so it feeds only $[\text{grav}^2X]$ and $[X^3]$ and
+\emph{cannot} touch the mixed $[Y^2X]$ or $[YX^2]$; the engine reports the
+sterile menu as structurally blocked on exactly those two coefficients. The
+search is therefore forced up one tier, and the colorless menu repairs the model
+with one hypercharged $E'_L/E'_R$ pair ($Y=-2$): two Weyl multiplets carrying
+$X_L=1$, $X_R=0$ in the signed left/right convention of Eq.~\eqref{eq:mixed},
+vector-like under the Standard Model and chiral under $\UX$. With that pair
+included, all eleven coefficients re-verify to zero.
+
+This example isolates anomaly repair. Invariance of the ordinary electron
+Yukawa interaction under the added $\UX$ is a separate model-building constraint
+unless the scalar charges or scalar sector are included in the skeleton.
+
+The sterile tier is ruled out analytically: no number of sterile multiplets can
+generate the $[Y^2X]$ or $[YX^2]$ support it must cancel. The two-field
+colorless pair is therefore certified minimal within the declared menu and cost
+ordering because all cheaper tiers are support-pruned; re-verification proves
+the returned witness itself cancels all anomalies.
+
+As a colored example, assign $X=1$ to $Q_L$ alone. The computed residual vector
+has
+\[
+\begin{aligned}
+\relax[\SUthree^2X]&=1, &
+[\SUtwo^2X]&=\tfrac32, &
+[\text{grav}^2X]&=6,\\
+[Y^2X]&=\tfrac23, &
+[YX^2]&=2, &
+[X^3]&=6 .
+\end{aligned}
+\]
+The nonzero $[\SUthree^2X]$ coefficient rules out the sterile and colorless
+tiers by support before any nonlinear solve is attempted. A single $D'$ pair has
+color support but not weak support, so it is also support-pruned at the same
+field count. The first rational repair in the declared ordering is a colored
+weak-doublet $Q'_L/Q'_R$ pair with $Y=1/3$ and $(X_L,X_R)=(0,1)$, after which
+all eleven anomaly coefficients re-verify to zero.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+charge assignment & reported repair tier & example repair\\
+\midrule
+$B\!-\!L$ & sterile-repairable & $\nu_R$ with $X=-1$\\
+$X$ on $e_R$ only & colorless-exotic-repairable & an $E'_L/E'_R$ chiral split\\
+$X$ on $Q_L$ only & colored-exotic-required & a $Q'_L/Q'_R$ chiral split\\
+\bottomrule
+\end{tabular}
+\caption{The reported repair tier for three $\UX$ charge assignments, as
+classified by \nsm{}. $B\!-\!L$ is the familiar sterile case; the others demand
+hypercharged or colored exotics that the sterile menu cannot supply.}
+\label{tab:tiers}
+\end{table}
+
+This is not a particle-discovery machine. It is a consistency and repair map
+within a declared representation menu and cost ordering. That turns the layer
+from a checker that validates one known result into a tool that maps a space of
+anomalous extensions into repair classes, reporting what \emph{kind} of new
+matter a broken gauge extension demands when the lower-cost record is certified.
+
+\paragraph{A repair census.}
+Because the classifier is mechanical, it can be run over a family of extensions
+rather than a single example. The census enumerates every integer $\UX$ charge
+assignment to one generation with $|q|\le 2$, reduces rescaling/sign duplicates
+to the zero assignment plus $1441$ nonzero primitive sign-fixed representatives
+(the tier is invariant under $X\to\lambda X$; it is also invariant under
+hypercharge mixing $X\to X+\alpha Y$, which this paper does not quotient but
+uses as an internal consistency check), and classifies each representative by
+its reported repair class. The
+resulting census (Table~\ref{tab:census}) is a reproducible, basis-dependent
+slice: one cell is the trivial zero generator, $0.1\%$ are sterile-repairable,
+$9.6\%$ need only colorless exotics, $31.5\%$ require colored exotics, and
+$58.7\%$ have no repair found with at most six added Weyl multiplets.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+reported class & total & share & certified min./search & uncertified rung\\
+\midrule
+already-consistent & $1$ & $0.1\%$ & $1$ & $0$\\
+sterile-repairable & $1$ & $0.1\%$ & $1$ & $0$\\
+colorless-exotic-repairable & $139$ & $9.6\%$ & $139$ & $0$\\
+colored-exotic-required & $454$ & $31.5\%$ & $454$ & $0$\\
+no repair found ($\le6$ multiplets) & $847$ & $58.7\%$ & $766$ & $81$\\
+\bottomrule
+\end{tabular}
+\caption{Repair census of the zero assignment plus $1441$ nonzero
+primitive sign-fixed integer $\UX$ assignments to one generation with $|q|\le2$
+in the fixed $(Y,X)$ basis (menu N/E/L/D/Q, budget six added Weyl multiplets,
+solver timeout $8\,$s per SMT call). The raw grid has $3125$ cells ($2.17\times$
+deduplication). ``Certified min./search'' means no lower-cost support or solver
+rung was unresolved; for the last row it certifies only the bounded search
+record, not existence or nonexistence above the budget.}
+\label{tab:census}
+\end{table}
+
+Three caveats are built into the table. First, the last row is a
+\emph{Weyl-multiplet-budget artifact}, not an unrepairability theorem: with the full menu
+every failing anomaly is individually reachable (a necessary, not sufficient,
+condition for a joint repair), no cell is structurally blocked, and the
+unrepaired-within-budget fraction decreases in lower-budget runs as the budget
+grows. The census therefore reports ``no repair found with
+$\le6$ multiplets,'' not a proof that a repair exists or does not exist at larger
+size. Second, the percentages count a bounded integer box in one fixed $(Y,X)$
+basis; they are not a measure over all $\UX$ extensions, and a different choice
+of generator would re-slice the population. Third, $81$ cells carry an
+uncertified solver rung (an \texttt{unknown} or \texttt{sat-algebraic-model}
+verdict in the minimality record), so their reported class is provisional. With
+those stated, the census is the method claim made concrete: not one rediscovery,
+but a reproducible map of which kind of new matter a bounded space of anomalous
+gauge extensions demands when the record is certified, or appears to demand when
+it is not.
+
+\section{Implementation}
+\label{sec:impl}
+
+\nsm{} is implemented in Python over exact rational arithmetic, Z3, and small
+graph searches; the narrated examples run via \texttt{python -m nsm}. In the
+primary anomaly/repair path, consistency conditions are compiled to solver
+assertions, and the routine that \emph{checks} a concrete spectrum is the same
+one that \emph{solves} for an unknown one: the anomaly-coefficient arithmetic is
+polymorphic in its charge arguments, returning exact rationals when fed
+rationals (a check) and symbolic expressions when fed solver variables (a
+constraint). Listing~\ref{lst:api} shows a representative query.
+
+\begin{lstlisting}[language=Python,caption={Public API: forced hypercharges, and a minimal repair.},label=lst:api]
+from fractions import Fraction as F
+from nsm import derive_hypercharges, minimal_repair
+from nsm.sm import standard_model_skeleton
+
+r = derive_hypercharges(standard_model_skeleton())
+r.hypercharges["Q_L"], r.is_unique     # -> (Fraction(1, 3), True)
+
+# gauged B-L (charges as exact Fractions); repair searches for a fix
+B_minus_L = (
+    ("Q_L", F(1, 3)), ("u_R", F(1, 3)), ("d_R", F(1, 3)),
+    ("L_L", F(-1)), ("e_R", F(-1)),
+)
+minimal_repair(B_minus_L).added        # -> [('nu_R', Fraction(-1, 1))]
+\end{lstlisting}
+
+The repair-census layer uses the same primitive over an integer charge grid: it
+reduces each vector to a primitive sign-fixed representative, keeps the raw and
+deduplicated denominators, records the representative's reported repair class,
+and exports CSV, Markdown, or \LaTeX{} summaries. Hypercharge-basis shifts
+are treated as an equivalence check rather than as a counting quotient, since
+they shear the integer lattice.
+
+The kernel poses the hypercharge problem as a conjunction of assertions (each
+anomaly coefficient equal to zero, gauge invariance of each Yukawa coupling, and
+one normalization) and reads the unique assignment from the model. Whether that
+assignment \emph{is} unique is decided by a second solve: assert the negation of
+the found solution and check satisfiability. \texttt{unsat} certifies
+uniqueness; \texttt{sat} exhibits a distinct second solution (such as the
+$u_R\!\leftrightarrow\!d_R$ ambiguity in the anomaly-only validation check); and
+\texttt{unknown} (the solver exceeding its budget on the nonlinear real
+arithmetic) is reported as a genuine third outcome rather than silently
+collapsed to false certainty. The downstream structural routines use separate
+combinatorial searches over configured vertices. The minimal-repair search
+(Listing~\ref{lst:repair}) encodes anomaly cancellation for each candidate menu
+combination, walks the declared cost ordering, and treats algebraic solver
+models as uncertified for rational-repair purposes rather than failing on them.
+
+\begin{lstlisting}[language=Python,caption={Tiered repair: search tiers, then the declared cost ordering within each tier.},label=lst:repair]
+prior_records = []
+for tier in [("sterile", N), ("colorless", NEL), ("colored", NELDQ)]:
+    for cost, combo in get_combinations(max_added, tier.menu):
+        if combo_cannot_reach_a_nonzero_anomaly(combo):
+            prior_records.append(record(tier, cost, combo, "support-prune"))
+            continue
+        status, charges = solve_anomaly_equations(combo)
+        prior_records.append(record(tier, cost, combo, status))
+        if status == "sat-rational":
+            repair = make_added_fields(combo, charges)
+            assert verify_all_anomalies_vanish(repair)
+            # Minimal only if every prior rung is support-pruned or unsat.
+            return repair, certify_minimality(prior_records)
+\end{lstlisting}
+
+\section{Validation}
+\label{sec:validation}
+
+Because the anomaly/repair engine's value is its correctness, it was checked two
+ways. First, the public anomaly/repair test suite (176 tests, distributed with
+the code) pins the physics
+against hand-computed values, including \emph{nonzero} anomaly coefficients, so
+that a wrong Dynkin or multiplicity factor which still cancels for the symmetric
+Standard Model cannot hide. Second, as internal quality assurance, the anomaly
+and repair outputs were independently re-derived and differential-tested against
+the implementation over randomized inputs; this process found and fixed real
+defects (for example, a non-terminating uniqueness search and a crash on
+algebraic solver models) and indicated that the full two-$U(1)$ check agrees
+with a single-$U(1)$ check wherever the latter applies while additionally
+catching mixed-anomaly failures, with no disagreement observed over
+$2\times10^{4}$ random charge assignments. This internal cross-checking is
+evidence of correctness, not a substitute for independent external reproduction;
+the test suite is the reproducible artifact.
+
+\paragraph{Known-result checks.}
+As a validation of the same constraint machinery, \nsm{} can leave the Standard
+Model hypercharges unknown, impose anomaly cancellation, Yukawa gauge
+invariance, and the convention $Y_H=1$, and recover the unique one-generation
+solution
+\[
+Y_{Q_L}=\tfrac13,\quad Y_{u_R}=\tfrac43,\quad Y_{d_R}=-\tfrac23,\quad
+Y_{L_L}=-1,\quad Y_{e_R}=-2 .
+\]
+To isolate anomaly cancellation alone, the validation removes the Higgs and Yukawa
+constraints and instead fixes $Y_{Q_L}=1/3$; the remaining solutions are exactly
+the two assignments related by $u_R\!\leftrightarrow d_R$. Adding a free
+right-handed neutrino opens the familiar $B\!-\!L$ flat direction, while a lone
+colored Weyl fermion or an odd number of weak doublets is rejected by the
+non-abelian cubic anomaly or Witten parity check, respectively.
+
+\paragraph{Guaranteed versus observed.}
+The engine rests on three trust anchors: anomaly coefficients for concrete
+spectra are computed in exact rational arithmetic; \texttt{support-prune} lower bounds
+are representation-theoretic subset checks; and the nontrivial solver claim
+needed for minimality is a sound \texttt{unsat} result from Z3 for the asserted
+real polynomial constraints~\cite{z3,nlsat}. A reported zero or nonzero
+coefficient is therefore exact, and an SMT \texttt{unsat} verdict rules out the
+tested repair combination over the reals. A lower-cost record made
+only of \texttt{support-prune} and \texttt{unsat} verdicts is consequently a
+solver-backed guarantee of minimality within the declared menu and cost
+ordering. Everything else is reported as evidence, not proof: an
+\texttt{unknown} or \texttt{sat-algebraic-model} rung does not certify
+minimality, and differential agreement is a test result rather than a theorem.
+For the anomaly and repair layers the tool either returns a guarantee or labels
+the result uncertified. Optional downstream graph-search routines are
+distributed with the package, but they are not part of the anomaly-repair
+guarantee studied here.
+
+\section{Related work}
+
+\nsm{} is closest in spirit to model-building infrastructure, but it is aimed at
+an earlier phase of the workflow. FeynRules~\cite{feynrules2} and
+SARAH~\cite{sarah4} take a specified model (fields, symmetries, parameters, and
+often a Lagrangian) and derive model data such as vertices, mass matrices,
+renormalization-group equations, and interfaces to simulation tools. PyR@TE
+focuses on automatic renormalization-group equations for general gauge
+theories~\cite{pyrate}. SModelS decomposes BSM collider signatures into
+simplified-model topologies and confronts them with LHC limits~\cite{smodels}.
+These tools are deeper calculators and phenomenology interfaces than \nsm{} is.
+A recent LLM-assisted BSM framework similarly keeps a deterministic symbolic
+backend for Lagrangian construction, anomaly checks, operator expansion, and mass
+matrices, with the LLM used as an orchestration layer~\cite{bsmagent}; it is
+adjacent to, not a replacement for, the narrower inverse-repair workflow here.
+
+The anomaly-equation literature addresses much closer mathematics.
+Costa--Dobrescu--Fox give a general solution to the $U(1)$ anomaly
+equations~\cite{u1solution}. Allanach--Davighi--Melville's
+\emph{Anomaly-free Atlas} scans bounded $U(1)$ charge assignments and publishes
+anomaly-free charge lists~\cite{anomalyatlas}. Allanach--Gripaios--Tooby-Smith
+solve local anomaly equations for gauge-rank extensions with fixed SM-singlet
+content~\cite{allanachsinglets}. Batra--Dobrescu--Spivak prove constructive
+anomaly-free embeddings for arbitrary rational charges, including additional
+matter that is vector-like under the SM but chiral under a new $U(1)$
+factor~\cite{batra}. Rathsman--Tellander use algebraic-geometry methods to find
+rational anomaly-free Froggatt--Nielsen-type models~\cite{rathsman}.
+
+The distinction is the optimization problem and its certification record, both
+relative to a declared SM representation menu. Prior work includes both
+classification of anomaly-free assignments and constructive repair of anomalous
+rational charge sets. Here the input is a fixed anomalous assignment, while the
+output is the first exact rational repair found in a lexicographic menu ordering,
+accompanied by support lower bounds, a record of every cheaper menu combination's
+status, and an exact re-verification of the returned spectrum. The full
+mixed-anomaly computation is essential infrastructure for that workflow, but not
+presented as the principal novelty by itself.
+
+\section{Limitations}
+\label{sec:limits}
+
+\nsm{} is a structural anomaly-repair engine, not a complete model builder. The
+present paper treats a one-generation charge skeleton. When interpreted as a
+three-family model, this corresponds to family-universal charges and does not
+exploit possible intergenerational anomaly cancellation. The repair
+menu is fixed to $N,E',L',D',Q'$ and the minimality claim is relative to that
+menu and the representation-first cost ordering of Section~4. Charges are
+reported as exact rationals; the SMT search over real polynomial constraints is
+a relaxation used to obtain sound \texttt{unsat} results, and algebraic models
+are marked uncertified for rational-repair purposes. The objective does not
+optimize numerator or denominator complexity of the repaired charges.
+
+The anomaly check covers perturbative local anomalies for the specified product
+group, plus the modeled Witten $\SUtwo$ parity check. It does not cover general
+discrete or global anomalies, nor Green--Schwarz or Wess--Zumino cancellation
+mechanisms. The returned matter repair is only an anomaly-cancelling fermion
+spectrum: \nsm{} does not synthesize the scalar sector, preserve or redesign
+Yukawa interactions, generate masses for $\UX$-chiral exotics, compute cross
+sections or decay rates, evaluate amplitudes, simulate detectors, or make
+discovery claims. The optional process and graph-search modules distributed with
+the package are downstream structural checks over a configured vertex subset;
+they are not part of the paper's central guarantee.
+
+\section{Conclusion}
+
+\nsm{} demonstrates that anomaly diagnosis and minimal matter repair for
+$\UX$ extensions can be turned into a reproducible structural workflow: find the
+obstruction, test which repair menus can reach it, return an exact witness when
+one is found, and say plainly where the evidence stops. The support bounds make
+many repair-tier statements exact before the solver runs; the solver is reserved
+for the remaining nonlinear repair search, and unresolved cases are labeled
+uncertified. Natural extensions include emitting tracked unsat cores, SMT-LIB
+replay artifacts, or solver proof logs for the minimality records, and, as a
+separate project phase, moving from anomaly repair to full-model synthesis with
+scalar sectors, Yukawa preservation, and chiral process labels.
+
+\paragraph{Availability.} The implementation, tests, and census-generation
+scripts are available at
+\url{https://github.com/Morritse/nsm-anomaly-repair}, version
+\texttt{0.1.0}, under the MIT License. The release corresponding to this
+submission is tagged \texttt{paper1-cpc-submission}. Table~\ref{tab:census}
+was generated with:
+\begin{lstlisting}[language=bash]
+.venv/bin/python scripts/repair_map.py \
+    --radius 2 --max-added 6 --timeout-ms 8000 \
+    --output csv --workers 16
+\end{lstlisting}
+using Python~3.14.4 and Z3~4.16.0 on Linux
+\texttt{7.0.1-070001-generic x86\_64}. The generated census CSV has SHA-256:
+\begin{lstlisting}
+eca2f579baef8d91f11fcbe79273b6e907dd13d001136134c7487e33f9f4f244
+\end{lstlisting}
+The randomized differential checks described in Section~\ref{sec:validation} were
+internal quality-assurance runs; the distributed reproducible artifacts are the
+deterministic test suite and the repair-census command above. The release tag
+and repository URL identify the software snapshot used here.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+
+During the preparation of this work, the author used
+\href{https://github.com/Morritse/Claudex}{Claudex}, an open-source,
+author-developed multi-agent orchestration interface, to coordinate Claude Code
+and Codex sessions backed by Anthropic Claude and OpenAI models. These tools
+were used to assist with drafting and language editing, structural organization
+of the manuscript, and iterative critical review and cross-checking of the
+manuscript's exposition, internal consistency, and framing of claims. After
+using these tools, the author reviewed and edited the content as needed and
+takes full responsibility for the content of the published article. The Claudex
+source repository is available at \url{https://github.com/Morritse/Claudex}.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{z3} L.~de Moura and N.~Bj{\o}rner, \emph{Z3: An Efficient SMT Solver},
+in TACAS 2008, LNCS \textbf{4963} (Springer), pp.~337--340 (2008).
+\bibitem{nlsat} D.~Jovanovi{\'c} and L.~de Moura, \emph{Solving Non-Linear
+Arithmetic}, in IJCAR 2012, LNCS \textbf{7364} (Springer), pp.~339--354 (2012).
+\bibitem{feynrules2} A.~Alloul, N.~D.~Christensen, C.~Degrande, C.~Duhr, and
+B.~Fuks, \emph{FeynRules 2.0--A complete toolbox for tree-level
+phenomenology}, Comput.\ Phys.\ Commun.\ \textbf{185}, 2250--2300 (2014).
+\bibitem{sarah4} F.~Staub, \emph{SARAH 4: A tool for (not only SUSY) model
+builders}, Comput.\ Phys.\ Commun.\ \textbf{185}, 1773--1790 (2014).
+\bibitem{pyrate} F.~Lyonnet, I.~Schienbein, F.~Staub, and A.~Wingerter,
+\emph{PyR@TE: Renormalization Group Equations for General Gauge Theories},
+Comput.\ Phys.\ Commun.\ \textbf{185}, 1130--1152 (2014).
+\bibitem{smodels} S.~Kraml, S.~Kulkarni, U.~Laa, A.~Lessa, W.~Magerl,
+D.~Proschofsky-Spindler, and W.~Waltenberger, \emph{SModelS: a tool for
+interpreting simplified-model results from the LHC and its application to
+supersymmetry}, Eur.\ Phys.\ J.\ C \textbf{74}, 2868 (2014).
+\bibitem{u1solution} D.~B.~Costa, B.~A.~Dobrescu, and P.~J.~Fox,
+\emph{General Solution to the $U(1)$ Anomaly Equations}, Phys.\ Rev.\ Lett.\
+\textbf{123}, 151601 (2019).
+\bibitem{anomalyatlas} B.~C.~Allanach, J.~Davighi, and S.~Melville,
+\emph{An Anomaly-free Atlas: charting the space of flavour-dependent gauged
+$U(1)$ extensions of the Standard Model}, JHEP \textbf{02}, 082 (2019),
+arXiv:1812.04602.
+\bibitem{allanachsinglets} B.~C.~Allanach, B.~Gripaios, and J.~Tooby-Smith,
+\emph{Solving local anomaly equations in gauge-rank extensions of the Standard
+Model}, Phys.\ Rev.\ D \textbf{101}, 075015 (2020), arXiv:1912.10022.
+\bibitem{batra} P.~Batra, B.~A.~Dobrescu, and D.~Spivak,
+\emph{Anomaly-Free Sets of Fermions}, J.\ Math.\ Phys.\ \textbf{47}, 082301
+(2006), arXiv:hep-ph/0510181.
+\bibitem{rathsman} J.~Rathsman and F.~Tellander,
+\emph{Anomaly-free Model Building with Algebraic Geometry}, Phys.\ Rev.\ D
+\textbf{100}, 055032 (2019), arXiv:1902.08529.
+\bibitem{bsmagent} S.~Saad,
+\emph{Large Language Model-Assisted Framework for BSM Model Building},
+arXiv:2606.21316 (2026).
+\bibitem{witten} E.~Witten, \emph{An $SU(2)$ Anomaly}, Phys.\ Lett.\ B
+\textbf{117}, 324 (1982).
+\bibitem{bminusL} R.~N.~Mohapatra and R.~E.~Marshak, \emph{Local $B\!-\!L$
+Symmetry of Electroweak Interactions, Majorana Neutrinos and Neutron
+Oscillations}, Phys.\ Rev.\ Lett.\ \textbf{44}, 1316 (1980).
+\end{thebibliography}
+
+\end{document}

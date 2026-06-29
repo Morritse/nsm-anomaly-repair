@@ -1,0 +1,28 @@
+# Python virtual environment (machine-specific, has hardcoded paths)
+.venv/
+
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS / editor cruft
+.DS_Store
+
+# LaTeX build byproducts; PDFs are committed for paper snapshots.
+*.aux
+*.log
+*.out
+
+# Throwaway probe/scratch scripts
+scratchpad_*.py
+
+# Local review / release archives
+*.zip
+
+# Generated docs exports
+docs/*.tex
+
+# Scratch outputs from local runs.
+/artifacts/
+/logs/

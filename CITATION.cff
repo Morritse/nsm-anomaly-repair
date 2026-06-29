@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the archived release and associated paper."
+title: "nsm: explainable menu-relative anomaly repair for U(1)_X extensions of the Standard Model"
+authors:
+  - family-names: Morritse
+    given-names: Evan
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/Morritse/nsm-anomaly-repair"
